@@ -1,7 +1,7 @@
 <script setup="" lang="ts">
 	import { ref } from 'vue';
 
-	const props = defineProps(['title', 'modelValue']);
+	const props = defineProps(['title', 'modelValue', 'size']);
 	const emits = defineEmits(['update:modelValue']);
 
 	const content = ref();
@@ -15,7 +15,7 @@
 
 <template>
 	<div class="modal fade" :class="{ show: props.modelValue }" @click="handleClick">
-		<div class="modal-dialog animate-down" ref="content">
+		<div :class="`modal-dialog animate-down modal-${props.size || 'base'}`" ref="content">
 			<div class="modal-content">
 				<div class="modal-header" v-if="props.title">
 					<div class="modal-title">

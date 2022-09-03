@@ -12,10 +12,10 @@
 
 	function login() {
 		state.isLogin = true;
-		localStorage.setItem('id', state.req.username);
+		localStorage.setItem('id', '1');
 		setTimeout(() => {
 			window.location.href = window.location.origin + window.location.pathname;
-		}, 1500);
+		}, 400);
 	}
 </script>
 
@@ -47,6 +47,7 @@
 												class="form-control form-control-lg"
 												type="text"
 												placeholder="Masukkan Username atau Email"
+												required
 												v-model="state.req.username"
 											/>
 										</div>
@@ -56,6 +57,7 @@
 												class="form-control form-control-lg"
 												:type="state.showPassword ? 'text' : 'password'"
 												placeholder="********"
+												required
 												v-model="state.req.password"
 											/>
 										</div>

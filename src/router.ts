@@ -1,5 +1,5 @@
 import HomeVue from './views/Home.vue';
-import KaryawanVue from './views/Karyawan.vue';
+import UserVue from './views/User.vue';
 import TugasVue from './views/Tugas.vue';
 import NotFoundVue from './views/NotFound.vue';
 import ProfileVue from './views/Profile.vue';
@@ -10,8 +10,8 @@ const router = [
 		component: HomeVue,
 	},
 	{
-		path: '/karyawan',
-		component: KaryawanVue,
+		path: '/user',
+		component: UserVue,
 	},
 	{
 		path: '/tugas',
@@ -22,7 +22,7 @@ const router = [
 		component: ProfileVue,
 	},
 	{
-		path: '/:any',
+		path: '/:any(.*)',
 		component: NotFoundVue,
 	},
 ];

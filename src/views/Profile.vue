@@ -1,7 +1,11 @@
 <script setup="" lang="ts">
-	import { reactive } from 'vue';
+	import { reactive, watch } from 'vue';
+	import { auth, createResource, http, notif } from '../lib';
+	import { User } from './User.vue';
 
-	const state = reactive({
+	const state = reactive<{
+		req: User;
+	}>({
 		req: {
 			id: '',
 			username: '',
@@ -9,6 +13,16 @@
 			password: '',
 			telepon: '',
 		},
+	});
+
+	const { data, error, isValidating } = createResource('/user/' + auth.id, (url) => http.get(url));
+
+	watch(data, (val) => {
+		state.req = val?.data;
+	});
+
+	watch(error, (val) => {
+		notif(val, 'danger');
 	});
 </script>
 
@@ -23,6 +37,7 @@
 					placeholder="Masukkan Nama"
 					class="form-control"
 					v-model="state.req.nama"
+					:disabled="isValidating"
 				/>
 			</div>
 			<div class="mb-3">
@@ -32,6 +47,7 @@
 					placeholder="Masukkan Telepon"
 					class="form-control"
 					v-model="state.req.telepon"
+					:disabled="isValidating"
 				/>
 			</div>
 			<div class="row">
@@ -43,6 +59,7 @@
 							placeholder="Masukkan Username"
 							class="form-control"
 							v-model="state.req.username"
+							:disabled="isValidating"
 						/>
 					</div>
 				</div>
@@ -54,10 +71,20 @@
 							placeholder="Masukkan Password"
 							class="form-control"
 							v-model="state.req.password"
+							:disabled="isValidating"
 						/>
 						<small class="text-secondary">Kosongkan jika tidak ingin mengganti password</small>
 					</div>
 				</div>
+			</div>
+			<div class="mb-3">
+				<label for="">Alamat</label>
+				<textarea
+					rows="3"
+					class="form-control"
+					v-model="state.req.alamat"
+					:disabled="isValidating"
+				></textarea>
 			</div>
 			<div class="mt-5">
 				<button type="submit" class="btn btn-primary">Simpan</button>

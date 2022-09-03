@@ -4,6 +4,7 @@
 
 	const state = reactive({
 		showLogout: false,
+		isLogout: false,
 	});
 
 	const navItems = [
@@ -13,9 +14,9 @@
 			path: '/',
 		},
 		{
-			title: 'Data Karyawan',
+			title: 'Data User',
 			icon: 'users',
-			path: '/karyawan',
+			path: '/user',
 		},
 		{
 			title: 'Data Tugas',
@@ -30,11 +31,16 @@
 	];
 
 	function logout() {
+		state.showLogout = false;
+		state.isLogout = true;
 		localStorage.removeItem('id');
-		window.location.href = window.location.origin + window.location.pathname;
+		setTimeout(() => {
+			window.location.href = window.location.origin + window.location.pathname;
+		}, 400);
 	}
 
-	function handleSidebar() {
+	function handleSidebar(e: Event) {
+		e.preventDefault();
 		const { clientWidth } = document.documentElement;
 
 		if (clientWidth <= 992) {
@@ -44,6 +50,13 @@
 </script>
 
 <template>
+	<div
+		class="loading d-flex align-items-center justify-content-center position-fixed bg-white"
+		:class="{ 'd-none': !state.isLogout }"
+		style="z-index: 1000; top: 0; left: 0; right: 0; bottom: 0"
+	>
+		Mengakhiri sesi. Mengalihkan...
+	</div>
 	<div class="wrapper">
 		<nav id="sidebar" class="sidebar js-sidebar">
 			<div class="sidebar-content js-simplebar">
@@ -87,7 +100,7 @@
 
 		<div class="main">
 			<nav class="navbar navbar-expand navbar-light navbar-bg">
-				<a class="sidebar-toggle js-sidebar-toggle">
+				<a href="#" @click="handleSidebar" class="d-lg-none d-block py-3">
 					<i class="hamburger align-self-center"></i>
 				</a>
 
@@ -95,7 +108,7 @@
 					<ul class="navbar-nav navbar-align">
 						<li class="nav-item dropdown">
 							<RouterLink class="nav-icon d-inline-block d-sm-none" to="/profil">
-								<i class="align-middle" data-feather="settings"></i>
+								<i class="align-middle" data-feather="user"></i>
 							</RouterLink>
 
 							<RouterLink class="nav-link d-none d-sm-inline-block" to="/profil">
