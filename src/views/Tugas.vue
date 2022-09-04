@@ -33,8 +33,18 @@
 		},
 	});
 
-	const { data, isValidating, error, mutate } = createResource(
-		['/user-tugas', state.filter],
+	const {
+		data: tugasSelesai,
+		isValidating,
+		error,
+		mutate: mutateTugasSelesai,
+	} = createResource(['/user/tugas', { ...state.filter, status: '1' }], (url, filter) =>
+		http.get(url, {
+			params: filter,
+		}),
+	);
+	const { data: tugasBelum, mutate: mutateTugasBelum } = createResource(
+		['/user/tugas', { ...state.filter, status: '0' }],
 		(url, filter) =>
 			http.get(url, {
 				params: filter,
@@ -42,50 +52,58 @@
 	);
 	const { data: user } = createResource('/user', (url) => http.get(url));
 
-	const tugasSelesai = computed((): any => {
-		return data.value?.data.filter((item: UserTugas) => {
-			return item.status == '1';
-		});
-	});
-
-	const tugasBelum = computed((): any => {
-		return data.value?.data.filter((item: UserTugas) => {
-			return item.status !== '1';
-		});
-	});
-
 	function nullable() {
 		state.req = {
 			userId: '',
-			status: '',
+			status: '0',
 			deadline: '',
 		};
+	}
+
+	function get() {
+		mutateTugasBelum();
+		mutateTugasSelesai();
 	}
 
 	function save() {
 		if (state.isEdit) {
 			http
-				.put('/user-tugas/' + state.req.id, state.req)
+				.put('/user/tugas/' + state.req.id, state.req)
 				.then((res) => {
 					notif('data berhasil diedit');
 					state.modal.save = false;
-					mutate();
+					get();
 				})
-				.catch((err) => notif(err, 'danger'));
+				.catch((err) => notif(err.response.data, 'danger'));
 		} else {
 			http
-				.post('/user-tugas', state.req)
+				.post('/user/tugas', state.req)
 				.then((res) => {
 					notif('data berhasil ditambah');
 					state.modal.save = false;
-					mutate();
+					get();
 				})
-				.catch((err) => notif(err, 'danger'));
+				.catch((err) => notif(err.response.data, 'danger'));
 		}
 	}
 
-	watch(error, () => {
-		notif(error.value, 'danger');
+	function destroy() {
+		http
+			.delete('/user/tugas/' + state.req.id)
+			.then((res) => {
+				notif('data berhasil dihapus');
+				state.modal.delete = false;
+				get();
+			})
+			.catch((err) => {
+				notif(err.response.data, 'danger');
+			});
+	}
+
+	watch(error, (val) => {
+		if (val) {
+			notif(val.response.data, 'danger');
+		}
 	});
 </script>
 
@@ -117,15 +135,22 @@
 					:loading="isValidating"
 					:keys="{
 						'Jenis Tugas': 'jenis',
-						Petugas: 'user',
+						Karyawan: 'user',
 						Deadline: 'deadline',
 						Lampiran: 'lampiran',
 						Opsi: 'opsi',
 					}"
-					:items="tugasBelum"
+					:items="tugasBelum?.data"
 				>
 					<template #user="{ item }">
 						{{ item.user?.nama }}
+					</template>
+
+					<template #lampiran="{ item }">
+						<button type="button" class="btn btn-sm btn-success" v-if="item.totalPengumpulan">
+							{{ item.totalPengumpulan }} Berkas
+						</button>
+						<span v-else>Tidak tersedia</span>
 					</template>
 
 					<template #deadline="{ item }">
@@ -154,7 +179,8 @@
 						</button>
 					</template>
 				</Table>
-				Menampilkan {{ data?.data.length }} dari {{ data?.headers['x-total-count'] }} data
+				Menampilkan {{ tugasBelum?.data.length }} dari
+				{{ tugasBelum?.headers['x-total-count'] }} data
 			</div>
 		</div>
 		<div class="card">
@@ -169,10 +195,17 @@
 						Lampiran: 'lampiran',
 						Opsi: 'opsi',
 					}"
-					:items="tugasSelesai"
+					:items="tugasSelesai?.data"
 				>
 					<template #user="{ item }">
-						{{ item.user.nama }}
+						{{ item.user?.nama }}
+					</template>
+
+					<template #lampiran="{ item }">
+						<button type="button" class="btn btn-sm btn-success" v-if="item.totalPengumpulan">
+							{{ item.totalPengumpulan }} Berkas
+						</button>
+						<span v-else>Tidak tersedia</span>
 					</template>
 
 					<template #deadline="{ item }">
@@ -191,6 +224,8 @@
 						</button>
 					</template>
 				</Table>
+				Menampilkan {{ tugasSelesai?.data.length }} dari
+				{{ tugasSelesai?.headers['x-total-count'] }} data
 			</div>
 		</div>
 
@@ -206,9 +241,9 @@
 					/>
 				</div>
 				<div class="mb-3">
-					<label for="">Petugas</label>
+					<label for="">Karyawan</label>
 					<select v-model="state.req.userId" class="form-control">
-						<option value="">Pilih Petugas</option>
+						<option value="">Pilih Karyawan</option>
 						<option v-for="item in user?.data" :value="item.id">{{ item.nama }}</option>
 					</select>
 				</div>
@@ -225,6 +260,18 @@
 
 				<div class="mt-5">
 					<button type="submit" class="btn btn-primary">Simpan</button>
+				</div>
+			</form>
+		</Modal>
+
+		<Modal v-model="state.modal.delete" title="Hapus Karyawan">
+			<form @submit.prevent="destroy">
+				<p>
+					Anda yakin menghapus data tugas <strong>{{ state.req.jenis }}</strong
+					>?
+				</p>
+				<div class="mt-5">
+					<button type="submit" class="btn btn-danger">Hapus</button>
 				</div>
 			</form>
 		</Modal>

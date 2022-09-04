@@ -15,21 +15,38 @@
 		},
 	});
 
-	const { data, error, isValidating } = createResource('/user/' + auth.id, (url) => http.get(url));
+	const { data, error, isValidating, mutate } = createResource('/user/' + auth.id, (url) =>
+		http.get(url),
+	);
 
 	watch(data, (val) => {
 		state.req = val?.data;
+		state.req.password = '';
 	});
 
 	watch(error, (val) => {
-		notif(val, 'danger');
+		if (val) {
+			notif(val.response.data, 'danger');
+		}
 	});
+
+	function update() {
+		http
+			.put('/user/' + auth.id, state.req)
+			.then((res) => {
+				notif('data berhasil diedit');
+				mutate();
+			})
+			.catch((err) => {
+				notif(err.response.data, 'danger');
+			});
+	}
 </script>
 
 <template>
 	<div class="h3 mb-3">Profil</div>
 	<div class="card">
-		<div class="card-body">
+		<form @submit.prevent="update" class="card-body">
 			<div class="mb-3">
 				<label for="">Nama</label>
 				<input
@@ -89,6 +106,6 @@
 			<div class="mt-5">
 				<button type="submit" class="btn btn-primary">Simpan</button>
 			</div>
-		</div>
+		</form>
 	</div>
 </template>

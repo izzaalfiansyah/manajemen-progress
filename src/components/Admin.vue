@@ -1,10 +1,15 @@
 <script setup lang="ts">
-	import { reactive } from 'vue';
+	import { reactive, watch } from 'vue';
+	import { auth, createResource, http, notif } from '../lib';
+	import { User } from '../views/User.vue';
 	import Modal from './Modal.vue';
+
+	const user: User = {};
 
 	const state = reactive({
 		showLogout: false,
 		isLogout: false,
+		user,
 	});
 
 	const navItems = [
@@ -29,6 +34,19 @@
 			path: '/profil',
 		},
 	];
+
+	const { data, error } = createResource('/user/' + auth.id, (url) => http.get(url));
+
+	watch(data, (val) => {
+		state.user = val?.data;
+		state.user.password = '';
+	});
+
+	watch(error, (val) => {
+		if (val) {
+			notif(val.response.data, 'danger');
+		}
+	});
 
 	function logout() {
 		state.showLogout = false;
@@ -112,7 +130,7 @@
 							</RouterLink>
 
 							<RouterLink class="nav-link d-none d-sm-inline-block" to="/profil">
-								<span class="text-dark">Charles Hall</span>
+								<span class="text-dark">{{ state.user.nama }}</span>
 							</RouterLink>
 						</li>
 					</ul>

@@ -11,7 +11,7 @@
 </script>
 
 <script setup="" lang="ts">
-	import { reactive, ref, watch } from 'vue';
+	import { computed, reactive, ref, watch } from 'vue';
 	import Table from '../components/Table.vue';
 	import Modal from '../components/Modal.vue';
 	import { http, createResource, notif } from '../lib';
@@ -24,14 +24,41 @@
 			delete: false,
 		},
 		req,
+		filter: {
+			q: '',
+			_limit: 5,
+			_page: 1,
+		},
 	});
 
-	const { data, error, isValidating, mutate } = createResource('/user', (url) => http.get(url));
+	const { data, error, isValidating, mutate } = createResource(
+		['/user', state.filter],
+		(url, filter) =>
+			http.get(url, {
+				params: filter,
+			}),
+	);
 
 	watch(error, (val) => {
 		if (val) {
-			notif(val, 'danger');
+			notif(val.response.data, 'danger');
 		}
+	});
+
+	watch(
+		() => JSON.parse(JSON.stringify(state.filter)),
+		(val, old) => {
+			if (val._page == old._page) {
+				state.filter._page = 1;
+			}
+			mutate();
+		},
+	);
+
+	const totalPage = computed(() => {
+		return Math.ceil(
+			parseInt((data.value?.headers['x-total-count'] as string) || '0') / state.filter._limit,
+		);
 	});
 
 	function nullable() {
@@ -50,7 +77,7 @@
 					mutate();
 				})
 				.catch((err) => {
-					notif(err, 'danger');
+					notif(err.response.data, 'danger');
 				});
 		} else {
 			http
@@ -61,7 +88,7 @@
 					mutate();
 				})
 				.catch((err) => {
-					notif(err, 'danger');
+					notif(err.response.data, 'danger');
 				});
 		}
 	}
@@ -75,7 +102,7 @@
 				mutate();
 			})
 			.catch((err) => {
-				notif(err, 'danger');
+				notif(err.response.data, 'danger');
 			});
 	}
 </script>
@@ -97,19 +124,38 @@
 					+ Tambah
 				</button>
 			</div>
+			<div class="row">
+				<div class="mb-3 col-lg-2">
+					<select v-model="state.filter._limit" class="form-control">
+						<option value="5">5</option>
+						<option value="10">10</option>
+						<option value="20">20</option>
+						<option value="50">50</option>
+						<option value="100">100</option>
+					</select>
+				</div>
+				<div class="mb-3 col-lg-6">
+					<input
+						type="text"
+						class="form-control"
+						v-model.lazy="state.filter.q"
+						placeholder="Cari..."
+					/>
+				</div>
+			</div>
 			<Table
 				:keys="{
 					Nama: 'nama',
+					Username: 'username',
 					Jabatan: 'role',
 					'Nomor HP': 'telepon',
-					Alamat: 'alamat',
 					Opsi: 'opsi',
 				}"
 				:items="data?.data"
 				:loading="isValidating"
 			>
 				<template #role="{ item }">
-					{{ item.role == '1' ? 'Manager' : 'Karyawan' }}
+					{{ ({ 1: 'Superadmin', 2: 'Manager', 3: 'Karyawan' } as any)[item.role] }}
 				</template>
 
 				<template #opsi="{ item }">
@@ -119,6 +165,7 @@
 							state.modal.save = true;
 							state.isEdit = true;
 							state.req = JSON.parse(JSON.stringify(item));
+							state.req.password = '';
 						"
 					>
 						<i class="bi bi-vector-pen"></i>
@@ -134,6 +181,18 @@
 					</button>
 				</template>
 			</Table>
+			<div>
+				Halaman :
+				<select
+					v-model="state.filter._page"
+					class="form-control d-inline p-1 px-2"
+					style="width: 50px"
+				>
+					<option v-for="(_, index) in Array(totalPage)" :value="index + 1">
+						{{ index + 1 }}
+					</option>
+				</select>
+			</div>
 		</div>
 
 		<Modal
@@ -162,9 +221,12 @@
 								type="password"
 								placeholder="Masukkan Password"
 								class="form-control"
-								required
+								:required="!state.isEdit"
 								v-model="state.req.password"
 							/>
+							<small v-if="state.isEdit" class="text-secondary"
+								>Kosongkan jika tidak ingin mengganti password</small
+							>
 						</div>
 					</div>
 				</div>
@@ -182,8 +244,9 @@
 					<label for="">Jabatan</label>
 					<select required v-model="state.req.role" class="form-control">
 						<option value="">Pilih Jabatan</option>
-						<option value="1">Admin</option>
-						<option value="2">Pegawai</option>
+						<option value="1">Superadmin</option>
+						<option value="2">Manager</option>
+						<option value="3">Karyawan</option>
 					</select>
 				</div>
 				<div class="mb-2">

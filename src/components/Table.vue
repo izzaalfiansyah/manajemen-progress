@@ -10,6 +10,10 @@
 	const keys = computed(() => {
 		return props.keys ? Object.values(props.keys) : [];
 	});
+
+	const items = computed(() => {
+		return props.items ? props.items : [];
+	});
 </script>
 
 <template>
@@ -29,7 +33,7 @@
 					</tr>
 				</template>
 				<template v-else>
-					<tr v-if="props.items.length" v-for="item in props.items">
+					<tr v-if="items.length" v-for="item in items">
 						<td v-for="key in keys">
 							<slot :name="key" :item="item">{{ item[key] }}</slot>
 						</td>
@@ -50,7 +54,7 @@
 					</tr>
 				</template>
 				<template v-else>
-					<tr v-if="props.items.length" v-for="item in props.items" class="d-block">
+					<tr v-if="items.length" v-for="item in items" class="d-block">
 						<td class="d-flex align-items-center" v-for="(key, i) in keys">
 							<div class="col pr-2">
 								<strong>{{ headers[i].toUpperCase() }}</strong>

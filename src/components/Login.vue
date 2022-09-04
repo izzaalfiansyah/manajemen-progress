@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 	import { reactive } from 'vue';
+	import { http, notif } from '../lib';
 
 	const state = reactive({
 		req: {
@@ -11,11 +12,18 @@
 	});
 
 	function login() {
-		state.isLogin = true;
-		localStorage.setItem('id', '1');
-		setTimeout(() => {
-			window.location.href = window.location.origin + window.location.pathname;
-		}, 400);
+		http
+			.post('/login', state.req)
+			.then((res) => {
+				state.isLogin = true;
+				localStorage.setItem('id', res.data.id);
+				localStorage.setItem('role', res.data.role);
+				localStorage.setItem('app_key', res.data.app_key);
+				setTimeout(() => {
+					window.location.href = window.location.origin + window.location.pathname;
+				}, 400);
+			})
+			.catch((err) => notif(err.response.data, 'danger'));
 	}
 </script>
 

@@ -6,6 +6,7 @@ export const http = axios.create({
 	headers: {
 		'Content-Type': 'application/json',
 		Accept: 'application/json',
+		Authorization: localStorage.getItem('app_key') as string,
 	},
 });
 
