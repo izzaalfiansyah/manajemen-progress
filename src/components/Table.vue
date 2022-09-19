@@ -33,9 +33,9 @@
 					</tr>
 				</template>
 				<template v-else>
-					<tr v-if="items.length" v-for="item in items">
+					<tr v-if="items.length" v-for="(item, index) in items">
 						<td v-for="key in keys">
-							<slot :name="key" :item="item">{{ item[key] }}</slot>
+							<slot :name="key" :index="index" :item="item">{{ item[key] }}</slot>
 						</td>
 					</tr>
 					<tr v-else>
@@ -54,13 +54,13 @@
 					</tr>
 				</template>
 				<template v-else>
-					<tr v-if="items.length" v-for="item in items" class="d-block">
+					<tr v-if="items.length" v-for="(item, index) in items" class="d-block">
 						<td class="d-flex align-items-center" v-for="(key, i) in keys">
 							<div class="col pr-2">
 								<strong>{{ headers[i].toUpperCase() }}</strong>
 							</div>
 							<div class="col pl-2" align="right">
-								<slot :name="key" :item="item">{{ item[key] }}</slot>
+								<slot :name="key" :index="index" :item="item">{{ item[key] }}</slot>
 							</div>
 						</td>
 					</tr>

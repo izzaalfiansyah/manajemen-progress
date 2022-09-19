@@ -30,13 +30,27 @@ class UserTugas extends Model
 
 
     public $appends = [
+        'statusDetail',
         'totalPengumpulan',
+        'tanggalPengumpulan',
     ];
+
+    public function getStatusDetailAttribute()
+    {
+        $statusDetail = ['Menunggu', 'Disetujui', 'Ditolak'][(int) $this->status];
+        return $statusDetail;
+    }
 
     public function getTotalPengumpulanAttribute()
     {
         $total = DB::table('user_tugas_pengumpulan')->where('userTugasId', $this->id)->count();
         return (int) $total;
+    }
+
+    public function getTanggalPengumpulanAttribute()
+    {
+        $tanggal = DB::table('user_tugas_pengumpulan')->where('userTugasId', $this->id)->orderBy('created_at', 'desc')->first();
+        return $tanggal->created_at;
     }
 
     public static function rules()
@@ -45,7 +59,7 @@ class UserTugas extends Model
             'jenis' => 'required',
             'userId' => 'required|integer',
             'deadline' => 'required',
-            'status' => 'required|in:1,0',
+            'status' => 'required|in:0,1,2',
         ];
     }
 }

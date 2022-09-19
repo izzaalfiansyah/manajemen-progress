@@ -18,7 +18,7 @@ export const notif = (
 ) => {
 	const div = document.createElement('div');
 	div.innerHTML = `
-	<div class="toast show position-fixed toast-top-right">
+	<div class="toast show position-fixed toast-top-right" style="z-index: 99999999999999">
     <div class="toast-header">
       <strong class="mr-auto">Informasi!</strong>
       <button
@@ -77,4 +77,17 @@ export const formatDate = (timestamp: string, t = false) => {
 	}
 
 	return date;
+};
+
+export const readFile = (file: any) => {
+	return new Promise((resolve, reject) => {
+		let reader = new FileReader();
+		reader.readAsDataURL(file);
+		reader.onload = () => {
+			resolve(reader.result);
+		};
+		reader.onerror = () => {
+			reject(reader.error);
+		};
+	});
 };

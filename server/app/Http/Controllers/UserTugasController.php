@@ -34,6 +34,7 @@ class UserTugasController extends Controller
             $builder = $builder->limit($limit)->skip(($page - 1) * $limit);
         }
 
+        $builder = $builder->orderBy('status');
         $builder = $builder->orderBy('created_at', 'desc');
         $data = $builder->get();
 
@@ -70,6 +71,7 @@ class UserTugasController extends Controller
         }
 
         $data = $schema->validated();
+
         $item = Model::find($id);
         if ($item) $item->update($data);
 

@@ -17,6 +17,15 @@ class UserTugasPengumpulan extends Model
         'file',
     ];
 
+    public $appends = [
+        'fileUrl',
+    ];
+
+    public function getFileUrlAttribute()
+    {
+        return asset('/assets/user/tugas/pengumpulan/' . $this->file);
+    }
+
     public static function rules()
     {
         return [

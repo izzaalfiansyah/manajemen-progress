@@ -12,28 +12,68 @@
 		user,
 	});
 
-	const navItems = [
-		{
-			title: 'Dashboard',
-			icon: 'home',
-			path: '/',
-		},
-		{
-			title: 'Data User',
-			icon: 'users',
-			path: '/user',
-		},
-		{
-			title: 'Data Tugas',
-			icon: 'airplay',
-			path: '/tugas',
-		},
-		{
-			title: 'Profile',
-			icon: 'user',
-			path: '/profil',
-		},
-	];
+	let navItems: { title: string; icon: string; path: string }[] = [];
+
+	if (auth.role == '1') {
+		navItems = [
+			{
+				title: 'Beranda',
+				icon: 'home',
+				path: '/',
+			},
+			{
+				title: 'Data User',
+				icon: 'users',
+				path: '/user',
+			},
+			{
+				title: 'Data Tugas',
+				icon: 'airplay',
+				path: '/tugas',
+			},
+			{
+				title: 'Akun',
+				icon: 'user',
+				path: '/profil',
+			},
+		];
+	} else if (auth.role == '2') {
+		navItems = [
+			{
+				title: 'Beranda',
+				icon: 'home',
+				path: '/',
+			},
+			{
+				title: 'Data Tugas',
+				icon: 'airplay',
+				path: '/tugas',
+			},
+			{
+				title: 'Akun',
+				icon: 'user',
+				path: '/profil',
+			},
+		];
+	} else {
+		navItems = [
+			{
+				title: 'Beranda',
+				icon: 'home',
+				path: '/',
+			},
+			{
+				title: 'Tugas Saya',
+				icon: 'airplay',
+				path: '/tugas-saya',
+			},
+			{
+				title: 'Akun',
+				icon: 'user',
+				path: '/profil',
+			},
+		];
+	}
 
 	const { data, error } = createResource('/user/' + auth.id, (url) => http.get(url));
 

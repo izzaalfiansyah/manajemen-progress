@@ -3,6 +3,7 @@ import UserVue from './views/User.vue';
 import TugasVue from './views/Tugas.vue';
 import NotFoundVue from './views/NotFound.vue';
 import ProfileVue from './views/Profile.vue';
+import TugasSayaVue from './views/TugasSaya.vue';
 
 const router = [
 	{
@@ -16,6 +17,10 @@ const router = [
 	{
 		path: '/tugas',
 		component: TugasVue,
+	},
+	{
+		path: '/tugas-saya',
+		component: TugasSayaVue,
 	},
 	{
 		path: '/profil',

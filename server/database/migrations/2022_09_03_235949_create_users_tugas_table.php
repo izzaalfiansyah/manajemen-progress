@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('jenis');
             $table->bigInteger('userId')->unsigned();
             $table->timestamp('deadline');
-            $table->enum('status', ['1', '0'])->default('0')->comment('1: selesai, 0: belum');
+            $table->enum('status', ['0', '1', '2'])->default('0')->comment('0: menunggu, 1: disetujui, 2: ditolak');
             $table->timestamps();
         });
     }

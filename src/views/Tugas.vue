@@ -12,7 +12,7 @@
 </script>
 
 <script setup="" lang="ts">
-	import { computed, reactive, ref, watch } from 'vue';
+	import { reactive, ref, watch } from 'vue';
 	import Table from '../components/Table.vue';
 	import Modal from '../components/Modal.vue';
 	import { createResource, http, notif, formatDate } from '../lib';
@@ -25,32 +25,35 @@
 		modal: {
 			save: false,
 			delete: false,
+			status: false,
+			lampiran: false,
 		},
 		req,
 		filter: {
 			_limit: 10,
 			_page: 1,
+			q: '',
+			status: '',
 		},
 	});
 
-	const {
-		data: tugasSelesai,
-		isValidating,
-		error,
-		mutate: mutateTugasSelesai,
-	} = createResource(['/user/tugas', { ...state.filter, status: '1' }], (url, filter) =>
-		http.get(url, {
-			params: filter,
-		}),
-	);
-	const { data: tugasBelum, mutate: mutateTugasBelum } = createResource(
-		['/user/tugas', { ...state.filter, status: '0' }],
+	const { data, mutate, error, isValidating } = createResource(
+		['/user/tugas', state.filter],
 		(url, filter) =>
 			http.get(url, {
 				params: filter,
 			}),
 	);
+
 	const { data: user } = createResource('/user', (url) => http.get(url));
+
+	const {
+		data: pengumpulan,
+		mutate: mutatePengumpulan,
+		isValidating: loadPengumpulan,
+	} = createResource(['/user/tugas/pengumpulan'], (url) => {
+		return http.get(url, { params: { userTugasId: state.req.id } });
+	});
 
 	function nullable() {
 		state.req = {
@@ -60,19 +63,15 @@
 		};
 	}
 
-	function get() {
-		mutateTugasBelum();
-		mutateTugasSelesai();
-	}
-
 	function save() {
 		if (state.isEdit) {
+			state.req.deadline = state.req.deadline?.slice(0, 16);
 			http
 				.put('/user/tugas/' + state.req.id, state.req)
 				.then((res) => {
 					notif('data berhasil diedit');
 					state.modal.save = false;
-					get();
+					mutate();
 				})
 				.catch((err) => notif(err.response.data, 'danger'));
 		} else {
@@ -81,10 +80,22 @@
 				.then((res) => {
 					notif('data berhasil ditambah');
 					state.modal.save = false;
-					get();
+					mutate();
 				})
 				.catch((err) => notif(err.response.data, 'danger'));
 		}
+	}
+
+	function changeStatus() {
+		state.req.deadline = state.req.deadline?.slice(0, 16);
+		http
+			.put('/user/tugas/' + state.req.id, state.req)
+			.then((res) => {
+				notif('status berhasil disimpan');
+				state.modal.status = false;
+				mutate();
+			})
+			.catch((err) => notif(err.response.data, 'danger'));
 	}
 
 	function destroy() {
@@ -93,12 +104,22 @@
 			.then((res) => {
 				notif('data berhasil dihapus');
 				state.modal.delete = false;
-				get();
+				mutate();
 			})
 			.catch((err) => {
 				notif(err.response.data, 'danger');
 			});
 	}
+
+	watch(
+		() => JSON.parse(JSON.stringify(state.filter)),
+		(val, old) => {
+			if (val._page == old._page) {
+				state.filter._page = 1;
+			}
+			mutate();
+		},
+	);
 
 	watch(error, (val) => {
 		if (val) {
@@ -112,23 +133,45 @@
 		<div class="h3 mb-3">Data Tugas</div>
 		<div class="card">
 			<div class="card-body">
-				<div class="row mb-3 align-items-center">
-					<div class="col">
-						<div class="card-title mb-0">Belum Diselesaikan</div>
+				<div class="mb-3">
+					<button
+						type="button"
+						@click="
+							nullable();
+							state.isEdit = false;
+							state.modal.save = true;
+							state.req.status = '0';
+						"
+						class="btn btn-primary"
+					>
+						+ Tambah
+					</button>
+				</div>
+				<div class="row">
+					<div class="mb-3 col-lg-2">
+						<select v-model="state.filter._limit" class="form-control">
+							<option value="5">5</option>
+							<option value="10">10</option>
+							<option value="20">20</option>
+							<option value="50">50</option>
+							<option value="100">100</option>
+						</select>
 					</div>
-					<div class="col" align="right">
-						<button
-							type="button"
-							@click="
-								nullable();
-								state.isEdit = false;
-								state.modal.save = true;
-								state.req.status = '0';
-							"
-							class="btn btn-primary"
-						>
-							+ Tambah
-						</button>
+					<div class="mb-3 col-lg-4">
+						<input
+							type="text"
+							class="form-control"
+							v-model.lazy="state.filter.q"
+							placeholder="Cari..."
+						/>
+					</div>
+					<div class="mb-3 col-lg-4">
+						<select v-model="state.filter.status" class="form-control">
+							<option value="">Semua</option>
+							<option value="0">Menunggu</option>
+							<option value="1">Disetujui</option>
+							<option value="2">Ditolak</option>
+						</select>
 					</div>
 				</div>
 				<Table
@@ -137,17 +180,28 @@
 						'Jenis Tugas': 'jenis',
 						Karyawan: 'user',
 						Deadline: 'deadline',
+						Dikumpulkan: 'dikumpulkan',
 						Lampiran: 'lampiran',
+						Status: 'statusDetail',
 						Opsi: 'opsi',
 					}"
-					:items="tugasBelum?.data"
+					:items="data?.data"
 				>
 					<template #user="{ item }">
 						{{ item.user?.nama }}
 					</template>
 
 					<template #lampiran="{ item }">
-						<button type="button" class="btn btn-sm btn-success" v-if="item.totalPengumpulan">
+						<button
+							type="button"
+							class="btn btn-sm btn-success"
+							v-if="item.totalPengumpulan"
+							@click="
+								state.req.id = item.id;
+								state.modal.lampiran = true;
+								mutatePengumpulan();
+							"
+						>
 							{{ item.totalPengumpulan }} Berkas
 						</button>
 						<span v-else>Tidak tersedia</span>
@@ -157,19 +211,24 @@
 						{{ formatDate(item.deadline, true) }}
 					</template>
 
+					<template #dikumpulkan="{ item }">
+						{{ item.totalPengumpulan ? formatDate(item.tanggalPengumpulan, true) : 'Belum' }}
+					</template>
+
 					<template #opsi="{ item }">
 						<button
-							class="btn btn-sm mx-1 btn-primary"
+							class="btn btn-sm m-1 btn-primary"
 							@click="
 								state.modal.save = true;
 								state.isEdit = true;
 								state.req = JSON.parse(JSON.stringify(item));
+								state.req.deadline = item.deadline;
 							"
 						>
 							<i class="bi bi-vector-pen"></i>
 						</button>
 						<button
-							class="btn btn-sm btn-danger"
+							class="btn btn-sm btn-danger m-1"
 							@click="
 								state.modal.delete = true;
 								state.req = JSON.parse(JSON.stringify(item));
@@ -177,55 +236,20 @@
 						>
 							<i class="bi bi-trash"></i>
 						</button>
-					</template>
-				</Table>
-				Menampilkan {{ tugasBelum?.data.length }} dari
-				{{ tugasBelum?.headers['x-total-count'] }} data
-			</div>
-		</div>
-		<div class="card">
-			<div class="card-body">
-				<div class="card-title">Telah Diselesaikan</div>
-				<Table
-					:loading="isValidating"
-					:keys="{
-						'Jenis Tugas': 'jenis',
-						Petugas: 'user',
-						Deadline: 'deadline',
-						Lampiran: 'lampiran',
-						Opsi: 'opsi',
-					}"
-					:items="tugasSelesai?.data"
-				>
-					<template #user="{ item }">
-						{{ item.user?.nama }}
-					</template>
-
-					<template #lampiran="{ item }">
-						<button type="button" class="btn btn-sm btn-success" v-if="item.totalPengumpulan">
-							{{ item.totalPengumpulan }} Berkas
-						</button>
-						<span v-else>Tidak tersedia</span>
-					</template>
-
-					<template #deadline="{ item }">
-						{{ formatDate(item.deadline, true) }}
-					</template>
-
-					<template #opsi="{ item }">
 						<button
-							class="btn btn-sm btn-danger"
+							class="btn btn-sm btn-success m-1"
 							@click="
-								state.modal.delete = true;
+								state.modal.status = true;
+								state.isEdit = true;
 								state.req = JSON.parse(JSON.stringify(item));
+								state.req.deadline = item.deadline;
 							"
 						>
-							<i class="bi bi-trash"></i>
+							<i class="bi bi-check"></i> Status
 						</button>
 					</template>
 				</Table>
-				Menampilkan {{ tugasSelesai?.data.length }} dari
-				{{ tugasSelesai?.headers['x-total-count'] }} data
+				Menampilkan {{ data?.data.length }} dari {{ data?.headers['x-total-count'] }} data
 			</div>
 		</div>
 
@@ -274,6 +298,73 @@
 					<button type="submit" class="btn btn-danger">Hapus</button>
 				</div>
 			</form>
+		</Modal>
+
+		<Modal v-model="state.modal.status" title="Setujui/Tolak">
+			<form @submit.prevent="changeStatus">
+				<div class="mb-2">
+					<label for="">Pilih Status : </label>
+					<div class="form-check">
+						<input
+							v-model="state.req.status"
+							name="status"
+							value="0"
+							class="form-check-input"
+							type="radio"
+							id="flexRadioDefault0"
+							disabled
+						/>
+						<label class="form-check-label" for="flexRadioDefault0"> Menunggu </label>
+					</div>
+					<div class="form-check">
+						<input
+							v-model="state.req.status"
+							name="status"
+							value="1"
+							class="form-check-input"
+							type="radio"
+							id="flexRadioDefault1"
+						/>
+						<label class="form-check-label" for="flexRadioDefault1"> Setujui </label>
+					</div>
+					<div class="form-check">
+						<input
+							v-model="state.req.status"
+							name="status"
+							value="2"
+							class="form-check-input"
+							type="radio"
+							id="flexRadioDefault2"
+						/>
+						<label class="form-check-label" for="flexRadioDefault2"> Tolak </label>
+					</div>
+				</div>
+				<div class="mt-5">
+					<button type="submit" class="btn btn-success">Simpan</button>
+				</div>
+			</form>
+		</Modal>
+
+		<Modal title="Lampiran Tugas" v-model="state.modal.lampiran" size="lg">
+			<Table
+				:loading="loadPengumpulan"
+				:keys="{
+					No: 'no',
+					File: 'file',
+					Opsi: 'opsi',
+				}"
+				:items="pengumpulan?.data"
+			>
+				<template #no="{ index }">
+					{{ index + 1 }}
+				</template>
+
+				<template #opsi="{ item }">
+					<a :href="item.fileUrl" target="_blank" class="btn btn-sm mx-1 btn-success">
+						<i class="bi bi-eye"></i>
+					</a>
+				</template>
+			</Table>
 		</Modal>
 	</div>
 </template>
